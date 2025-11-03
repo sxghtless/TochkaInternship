@@ -5,46 +5,31 @@ from collections import defaultdict, deque
 def build_graph(edges):
     graph = defaultdict(set)
     gates = set()
-    node = set()
     for a, b in edges:
         graph[a].add(b)
         graph[b].add(a)
         if a.isupper():
             gates.add(a)
-            node.add(b)
         elif b.isupper():
             gates.add(b)
-            node.add(a)
-        else:
-            node.update([a, b])
-    return graph, gates, node
+    return graph, gates
 
 
-def bfs_distance(graph, start, gates):
+def bfs_distance(graph, start):
     distance = {start: 0}
     q = deque([start])
     while q:
         u = q.popleft()
-        for v in graph[u]:
+        for v in sorted(graph[u]):
             if v not in distance:
                 distance[v] = distance[u] + 1
-                if v in gates:
-                    return True
                 q.append(v)
-    return False
+    return distance
 
 
 def nearest_gate(graph, start, gates):
-    dist = {start: 0}
-    queue = deque([start])
-    while queue:
-        u = queue.popleft()
-        for v in sorted(graph[u]):
-            if v not in dist:
-                dist[v] = dist[u] + 1
-                queue.append(v)
-
-    candidates = [(dist[g], g) for g in sorted(gates) if g in dist]
+    dist = bfs_distance(graph, start)
+    candidates = [(dist[g], g) for g in gates if g in dist]
     if not candidates:
         return None, None
 
@@ -79,32 +64,48 @@ def bfs_path(graph, start, min_gate):
 
 
 def solve(edges: list[tuple[str, str]]) -> list[str]:
-    graph, gates, node = build_graph(edges)
+    graph, gates = build_graph(edges)
     virus = 'a'
     result = []
 
-    while True:
+    while gates:
+        visited = {virus}
+        q = deque([virus])
+        reachable = False
+        while q:
+            u = q.popleft()
+            for v in graph[u]:
+                if v in gates:
+                    reachable = True
+                    break
+                if v not in visited:
+                    visited.add(v)
+                    q.append(v)
+            if reachable:
+                break
+
+        if not reachable:
+            break
+
         min_gate, path = nearest_gate(graph, virus, gates)
         if not min_gate or len(path) < 2:
             break
 
         near = path[-2]
-        cut = f"{min_gate}-{near}"
-        result.append(cut)
+        result.append(f"{min_gate}-{near}")
         graph[min_gate].remove(near)
         graph[near].remove(min_gate)
 
         if not graph[min_gate]:
             gates.remove(min_gate)
 
-        if len(path) > 2:
-            virus = path[1]
-        else:
-            break
+        virus = path[1] if len(path) > 2 else virus
 
-        dist = bfs_distance(graph, virus, gates)
-        if not dist:
-            break
+    remaining = []
+    for g in sorted(gates):
+        for n in sorted(graph[g]):
+            remaining.append(f"{g}-{n}")
+    result.extend(remaining)
 
     return result
 
