@@ -16,12 +16,11 @@ def build_graph(edges):
             gates.add(b)
             node.add(a)
         else:
-            node.add(a)
-            node.add(b)
+            node.update([a, b])
     return graph, gates, node
 
 
-def bfs_distance(graph, start):
+def bfs_distance(graph, start, gates):
     distance = {start: 0}
     q = deque([start])
     while q:
@@ -29,37 +28,55 @@ def bfs_distance(graph, start):
         for v in graph[u]:
             if v not in distance:
                 distance[v] = distance[u] + 1
+                if v in gates:
+                    return True
                 q.append(v)
-    return distance
+    return False
 
 
 def nearest_gate(graph, start, gates):
-    dist = bfs_distance(graph, start)
-    candidates = [(dist[g], g) for g in gates if g in dist]
+    dist = {start: 0}
+    queue = deque([start])
+    while queue:
+        u = queue.popleft()
+        for v in sorted(graph[u]):
+            if v not in dist:
+                dist[v] = dist[u] + 1
+                queue.append(v)
+
+    candidates = [(dist[g], g) for g in sorted(gates) if g in dist]
     if not candidates:
         return None, None
-    min_distance = min(d for d, _ in candidates)
-    min_gate = min(g for d, g in candidates if d == min_distance)
 
-    parent = {start: None}
+    _, min_gate = min(candidates)
+    path = bfs_path(graph, start, min_gate)
+    return min_gate, path
+
+
+def bfs_path(graph, start, min_gate):
     q = deque([start])
-    found = False
-    while q and not found:
+    parent = {start: None}
+
+    while q:
         u = q.popleft()
         for v in sorted(graph[u]):
             if v not in parent:
                 parent[v] = u
                 q.append(v)
                 if v == min_gate:
-                    found = True
+                    q.clear()
                     break
+
+    if min_gate not in parent:
+        return []
+
     path = []
     curr = min_gate
     while curr is not None:
         path.append(curr)
         curr = parent[curr]
     path.reverse()
-    return min_gate, path
+    return path
 
 
 def solve(edges: list[tuple[str, str]]) -> list[str]:
@@ -86,11 +103,10 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
         else:
             break
 
-    remaining = []
-    for g in sorted(gates):
-        for n in sorted(graph[g]):
-            remaining.append(f"{g}-{n}")
-    result.extend(remaining)
+        dist = bfs_distance(graph, virus, gates)
+        if not dist:
+            break
+
     return result
 
 
