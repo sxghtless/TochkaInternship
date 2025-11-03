@@ -56,7 +56,6 @@ def nearest_gate(graph, start, gates):
 def bfs_path(graph, start, min_gate):
     q = deque([start])
     parent = {start: None}
-
     while q:
         u = q.popleft()
         for v in sorted(graph[u]):
