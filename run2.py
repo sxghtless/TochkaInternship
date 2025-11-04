@@ -53,22 +53,14 @@ def bfs_path(graph, start, target):
 
 def nearest_gate(graph, start, gates):
     dist = bfs_distance(graph, start)
-    candidates = [(dist[g], g) for g in gates if g in dist]
+    candidates = [(dist[g], g) for g in sorted(gates) if g in dist]
     if not candidates:
         return None, None
 
-    _, target_gate = min(candidates)
+    min_dist = min(d for d, _ in candidates)
+    target_gate = min(g for d, g in candidates if d == min_dist)
 
-    next_node = None
-    min_next_dist = float('inf')
-
-    for neighbor in sorted(graph[start]):
-        neighbor_dist = bfs_distance(graph, neighbor).get(target_gate, float('inf'))
-        if neighbor_dist < min_next_dist:
-            min_next_dist = neighbor_dist
-            next_node = neighbor
-
-    return target_gate, next_node
+    return target_gate, bfs_path(graph, start, target_gate)
 
 
 def solve(edges: list[tuple[str, str]]) -> list[str]:
@@ -77,14 +69,8 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
     result = []
 
     while gates:
-        target_gate, next_node = nearest_gate(graph, virus, gates)
-
-        if not target_gate or not next_node:
-            break
-
-        path = bfs_path(graph, virus, target_gate)
-
-        if len(path) < 2:
+        target_gate, path = nearest_gate(graph, virus, gates)
+        if not target_gate or len(path) < 2:
             break
 
         node_before_gate = path[-2]
@@ -93,10 +79,22 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
         graph[target_gate].discard(node_before_gate)
         graph[node_before_gate].discard(target_gate)
 
-        if not any(n for n in graph[target_gate] if not n.isupper()):
+        if not graph[target_gate]:
             gates.remove(target_gate)
 
-        virus = next_node
+        dist_after = bfs_distance(graph, virus)
+        candidates_after = [(dist_after[g], g) for g in sorted(gates) if g in dist_after]
+        if not candidates_after:
+            break
+
+        min_d_after = min(d for d, _ in candidates_after)
+        min_gate_after = min(g for d, g in candidates_after if d == min_d_after)
+        path_after = bfs_path(graph, virus, min_gate_after)
+
+        if len(path_after) > 1:
+            virus = path_after[1]
+        else:
+            break
 
     return result
 
