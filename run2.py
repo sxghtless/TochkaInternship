@@ -27,6 +27,30 @@ def bfs_distance(graph, start):
     return distance
 
 
+def bfs_path(graph, start, target):
+    parent = {start: None}
+    q = deque([start])
+    while q:
+        u = q.popleft()
+        if u == target:
+            break
+        for v in sorted(graph[u]):
+            if v not in parent:
+                parent[v] = u
+                q.append(v)
+
+    if target not in parent:
+        return []
+
+    path = []
+    curr = target
+    while curr is not None:
+        path.append(curr)
+        curr = parent[curr]
+    path.reverse()
+    return path
+
+
 def nearest_gate(graph, start, gates):
     dist = bfs_distance(graph, start)
     candidates = [(dist[g], g) for g in gates if g in dist]
@@ -58,34 +82,19 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
         if not target_gate or not next_node:
             break
 
-        if next_node in gates:
-            result.append(f"{next_node}-{virus}")
-            graph[next_node].discard(virus)
-            graph[virus].discard(next_node)
+        path = bfs_path(graph, virus, target_gate)
 
-            if not any(n for n in graph[next_node] if not n.isupper()):
-                gates.remove(next_node)
-            continue
+        if len(path) < 2:
+            break
 
-        dist_to_gate = bfs_distance(graph, next_node).get(target_gate, float('inf'))
+        node_before_gate = path[-2]
 
-        if dist_to_gate == 1:
-            result.append(f"{target_gate}-{next_node}")
-            graph[target_gate].discard(next_node)
-            graph[next_node].discard(target_gate)
+        result.append(f"{target_gate}-{node_before_gate}")
+        graph[target_gate].discard(node_before_gate)
+        graph[node_before_gate].discard(target_gate)
 
-            if not any(n for n in graph[target_gate] if not n.isupper()):
-                gates.remove(target_gate)
-        else:
-            gate_neighbors = sorted([n for n in graph[target_gate] if not n.isupper()])
-
-            if gate_neighbors:
-                result.append(f"{target_gate}-{gate_neighbors[0]}")
-                graph[target_gate].discard(gate_neighbors[0])
-                graph[gate_neighbors[0]].discard(target_gate)
-
-                if not any(n for n in graph[target_gate] if not n.isupper()):
-                    gates.remove(target_gate)
+        if not any(n for n in graph[target_gate] if not n.isupper()):
+            gates.remove(target_gate)
 
         virus = next_node
 
