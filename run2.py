@@ -10,7 +10,7 @@ def build_graph(edges):
         graph[b].add(a)
         if a.isupper():
             gates.add(a)
-        elif b.isupper():
+        if b.isupper():
             gates.add(b)
     return graph, gates
 
@@ -33,34 +33,19 @@ def nearest_gate(graph, start, gates):
     if not candidates:
         return None, None
 
-    _, min_gate = min(candidates)
-    path = bfs_path(graph, start, min_gate)
-    return min_gate, path
+    _, target_gate = min(candidates)
 
+    next_node = None
+    min_next_dist = float('inf')
 
-def bfs_path(graph, start, min_gate):
-    q = deque([start])
-    parent = {start: None}
-    while q:
-        u = q.popleft()
-        for v in sorted(graph[u]):
-            if v not in parent:
-                parent[v] = u
-                q.append(v)
-                if v == min_gate:
-                    q.clear()
-                    break
+    for neighbor in sorted(graph[start]):
+        if neighbor in dist:
+            neighbor_dist = bfs_distance(graph, neighbor).get(target_gate, float('inf'))
+            if neighbor_dist < min_next_dist:
+                min_next_dist = neighbor_dist
+                next_node = neighbor
 
-    if min_gate not in parent:
-        return []
-
-    path = []
-    curr = min_gate
-    while curr is not None:
-        path.append(curr)
-        curr = parent[curr]
-    path.reverse()
-    return path
+    return target_gate, next_node
 
 
 def solve(edges: list[tuple[str, str]]) -> list[str]:
@@ -69,43 +54,42 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
     result = []
 
     while gates:
-        visited = {virus}
-        q = deque([virus])
-        reachable = False
-        while q:
-            u = q.popleft()
-            for v in graph[u]:
-                if v in gates:
-                    reachable = True
-                    break
-                if v not in visited:
-                    visited.add(v)
-                    q.append(v)
-            if reachable:
-                break
+        dist = bfs_distance(graph, virus)
+        reachable_gates = [g for g in gates if g in dist]
 
-        if not reachable:
+        if not reachable_gates:
             break
 
-        min_gate, path = nearest_gate(graph, virus, gates)
-        if not min_gate or len(path) < 2:
+        adjacent_gates = [neighbor for neighbor in graph[virus] if neighbor in gates]
+
+        if adjacent_gates:
+            gate_to_cut = sorted(adjacent_gates)[0]
+            result.append(f"{gate_to_cut}-{virus}")
+            graph[gate_to_cut].discard(virus)
+            graph[virus].discard(gate_to_cut)
+
+            if not any(n for n in graph[gate_to_cut] if not n.isupper()):
+                gates.remove(gate_to_cut)
+
+            continue
+
+        target_gate, next_node = nearest_gate(graph, virus, gates)
+
+        if not target_gate:
             break
 
-        near = path[-2]
-        result.append(f"{min_gate}-{near}")
-        graph[min_gate].remove(near)
-        graph[near].remove(min_gate)
+        gate_neighbors = sorted([n for n in graph[target_gate] if not n.isupper()])
 
-        if not graph[min_gate]:
-            gates.remove(min_gate)
+        if gate_neighbors:
+            result.append(f"{target_gate}-{gate_neighbors[0]}")
+            graph[target_gate].discard(gate_neighbors[0])
+            graph[gate_neighbors[0]].discard(target_gate)
 
-        virus = path[1] if len(path) > 2 else virus
+            if not any(n for n in graph[target_gate] if not n.isupper()):
+                gates.remove(target_gate)
 
-    remaining = []
-    for g in sorted(gates):
-        for n in sorted(graph[g]):
-            remaining.append(f"{g}-{n}")
-    result.extend(remaining)
+        if next_node:
+            virus = next_node
 
     return result
 
