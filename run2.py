@@ -39,11 +39,10 @@ def nearest_gate(graph, start, gates):
     min_next_dist = float('inf')
 
     for neighbor in sorted(graph[start]):
-        if neighbor in dist:
-            neighbor_dist = bfs_distance(graph, neighbor).get(target_gate, float('inf'))
-            if neighbor_dist < min_next_dist:
-                min_next_dist = neighbor_dist
-                next_node = neighbor
+        neighbor_dist = bfs_distance(graph, neighbor).get(target_gate, float('inf'))
+        if neighbor_dist < min_next_dist:
+            min_next_dist = neighbor_dist
+            next_node = neighbor
 
     return target_gate, next_node
 
@@ -54,25 +53,6 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
     result = []
 
     while gates:
-        dist = bfs_distance(graph, virus)
-        reachable_gates = [g for g in gates if g in dist]
-
-        if not reachable_gates:
-            break
-
-        adjacent_gates = [neighbor for neighbor in graph[virus] if neighbor in gates]
-
-        if adjacent_gates:
-            gate_to_cut = sorted(adjacent_gates)[0]
-            result.append(f"{gate_to_cut}-{virus}")
-            graph[gate_to_cut].discard(virus)
-            graph[virus].discard(gate_to_cut)
-
-            if not any(n for n in graph[gate_to_cut] if not n.isupper()):
-                gates.remove(gate_to_cut)
-
-            continue
-
         target_gate, next_node = nearest_gate(graph, virus, gates)
 
         if not target_gate:
