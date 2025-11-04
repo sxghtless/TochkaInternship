@@ -55,20 +55,27 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
     while gates:
         target_gate, next_node = nearest_gate(graph, virus, gates)
 
-        if not target_gate:
+        if not target_gate or not next_node:
             break
 
-        gate_neighbors = sorted([n for n in graph[target_gate] if not n.isupper()])
+        if next_node in gates:
+            result.append(f"{next_node}-{virus}")
+            graph[next_node].discard(virus)
+            graph[virus].discard(next_node)
 
-        if gate_neighbors:
-            result.append(f"{target_gate}-{gate_neighbors[0]}")
-            graph[target_gate].discard(gate_neighbors[0])
-            graph[gate_neighbors[0]].discard(target_gate)
+            if not any(n for n in graph[next_node] if not n.isupper()):
+                gates.remove(next_node)
+        else:
+            gate_neighbors = sorted([n for n in graph[target_gate] if not n.isupper()])
 
-            if not any(n for n in graph[target_gate] if not n.isupper()):
-                gates.remove(target_gate)
+            if gate_neighbors:
+                result.append(f"{target_gate}-{gate_neighbors[0]}")
+                graph[target_gate].discard(gate_neighbors[0])
+                graph[gate_neighbors[0]].discard(target_gate)
 
-        if next_node:
+                if not any(n for n in graph[target_gate] if not n.isupper()):
+                    gates.remove(target_gate)
+
             virus = next_node
 
     return result
