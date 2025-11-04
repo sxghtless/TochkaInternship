@@ -65,6 +65,17 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
 
             if not any(n for n in graph[next_node] if not n.isupper()):
                 gates.remove(next_node)
+            continue
+
+        dist_to_gate = bfs_distance(graph, next_node).get(target_gate, float('inf'))
+
+        if dist_to_gate == 1:
+            result.append(f"{target_gate}-{next_node}")
+            graph[target_gate].discard(next_node)
+            graph[next_node].discard(target_gate)
+
+            if not any(n for n in graph[target_gate] if not n.isupper()):
+                gates.remove(target_gate)
         else:
             gate_neighbors = sorted([n for n in graph[target_gate] if not n.isupper()])
 
@@ -76,7 +87,7 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
                 if not any(n for n in graph[target_gate] if not n.isupper()):
                     gates.remove(target_gate)
 
-            virus = next_node
+        virus = next_node
 
     return result
 
