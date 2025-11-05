@@ -49,8 +49,7 @@ def nearest_gate(graph, gates, start):
                 q.append(v)
     candidates = [(dist[g], g) for g in gates if g in dist]
     if not candidates:
-        return None, None
-
+        return None, []
     min_dist = min(d for d, _ in candidates)
     min_gate = min(g for d, g in candidates if d == min_dist)
     path = bfs_path(graph, start, min_gate)
@@ -107,10 +106,20 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
                 for g in sorted(graph[node]):
                     if g.isupper() and f"{g}-{node}" not in result:
                         result.append(f"{g}-{node}")
-            for node in sorted(graph.keys()):
-                for g in sorted(graph[node]):
-                    if g.isupper() and f"{g}-{node}" not in result:
-                        result.append(f"{g}-{node}")
+                        graph[g].discard(node)
+                        graph[node].discard(g)
+                        if not graph[g]:
+                            gates.discard(g)
+
+            remaining_gates = sorted(gates)
+            for gate in remaining_gates:
+                neighbors = sorted(graph[gate])
+                for neighbor in neighbors:
+                    if not neighbor.isupper():
+                        result.append(f"{gate}-{neighbor}")
+                        graph[gate].discard(neighbor)
+                        graph[neighbor].discard(gate)
+                gates.discard(gate)
             break
 
         near = path[-2]
