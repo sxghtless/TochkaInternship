@@ -2,19 +2,6 @@ import sys
 from collections import defaultdict, deque
 
 
-def build_graph(edges):
-    graph = defaultdict(set)
-    gates = set()
-    for a, b in edges:
-        graph[a].add(b)
-        graph[b].add(a)
-        if a.isupper():
-            gates.add(a)
-        if b.isupper():
-            gates.add(b)
-    return graph, gates
-
-
 def bfs_distance(graph, start):
     distance = {start: 0}
     q = deque([start])
@@ -53,46 +40,64 @@ def bfs_path(graph, start, target):
 
 def nearest_gate(graph, start, gates):
     dist = bfs_distance(graph, start)
-    candidates = [(dist[g], g) for g in sorted(gates) if g in dist]
+    candidates = [(dist[g], g) for g in gates if g in dist]
     if not candidates:
         return None, None
 
     min_dist = min(d for d, _ in candidates)
-    target_gate = min(g for d, g in candidates if d == min_dist)
-
-    return target_gate, bfs_path(graph, start, target_gate)
+    min_gate = min(g for d, g in candidates if d == min_dist)
+    path = bfs_path(graph, start, min_gate)
+    return min_gate, path
 
 
 def solve(edges: list[tuple[str, str]]) -> list[str]:
-    graph, gates = build_graph(edges)
+    graph = defaultdict(set)
+    gates = set()
+    for a, b in edges:
+        graph[a].add(b)
+        graph[b].add(a)
+        if a.isupper():
+            gates.add(a)
+        if b.isupper():
+            gates.add(b)
+
     virus = 'a'
     result = []
 
     while gates:
-        target_gate, path = nearest_gate(graph, virus, gates)
-        if not target_gate or len(path) < 2:
+        for g in sorted(graph[virus]):
+            if g.isupper():
+                result.append(f"{g}-{virus}")
+                graph[g].discard(virus)
+                graph[virus].discard(g)
+                if not graph[g]:
+                    gates.discard(g)
+
+        for node in sorted(graph.keys()):
+            gate_links = [x for x in graph[node] if x.isupper()]
+            if len(gate_links) > 1:
+                keep = min(gate_links)
+                for g in gate_links:
+                    if g != keep:
+                        result.append(f"{g}-{node}")
+                        graph[g].discard(node)
+                        graph[node].discard(g)
+                        if not graph[g]:
+                            gates.discard(g)
+
+        min_gate, path = nearest_gate(graph, virus, gates)
+        if not min_gate or len(path) < 2:
             break
 
-        node_before_gate = path[-2]
+        near = path[-2]
+        result.append(f"{min_gate}-{near}")
+        graph[min_gate].discard(near)
+        graph[near].discard(min_gate)
+        if not graph[min_gate]:
+            gates.discard(min_gate)
 
-        result.append(f"{target_gate}-{node_before_gate}")
-        graph[target_gate].discard(node_before_gate)
-        graph[node_before_gate].discard(target_gate)
-
-        if not graph[target_gate]:
-            gates.remove(target_gate)
-
-        dist_after = bfs_distance(graph, virus)
-        candidates_after = [(dist_after[g], g) for g in sorted(gates) if g in dist_after]
-        if not candidates_after:
-            break
-
-        min_d_after = min(d for d, _ in candidates_after)
-        min_gate_after = min(g for d, g in candidates_after if d == min_d_after)
-        path_after = bfs_path(graph, virus, min_gate_after)
-
-        if len(path_after) > 1:
-            virus = path_after[1]
+        if len(path) > 2:
+            virus = path[1]
         else:
             break
 
