@@ -37,9 +37,15 @@ def bfs_path(graph, start, target):
     path.reverse()
     return path
 
-
-def nearest_gate(graph, start, gates):
-    dist = bfs_distance(graph, start)
+def nearest_gate(graph, gates, start):
+    dist = {start: 0}
+    q = deque([start])
+    while q:
+        u = q.popleft()
+        for v in sorted(graph[u]):
+            if v not in dist:
+                dist[v] = dist[u] + 1
+                q.append(v)
     candidates = [(dist[g], g) for g in gates if g in dist]
     if not candidates:
         return None, None
@@ -65,16 +71,8 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
     result = []
 
     while gates:
-        for g in sorted(graph[virus]):
-            if g.isupper():
-                result.append(f"{g}-{virus}")
-                graph[g].discard(virus)
-                graph[virus].discard(g)
-                if not graph[g]:
-                    gates.discard(g)
-
         for node in sorted(graph.keys()):
-            gate_links = [x for x in graph[node] if x.isupper()]
+            gate_links = [g for g in graph[node] if g.isupper()]
             if len(gate_links) > 1:
                 keep = min(gate_links)
                 for g in gate_links:
@@ -85,8 +83,20 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
                         if not graph[g]:
                             gates.discard(g)
 
-        min_gate, path = nearest_gate(graph, virus, gates)
+        for g in sorted(graph[virus]):
+            if g.isupper():
+                result.append(f"{g}-{virus}")
+                graph[g].discard(virus)
+                graph[virus].discard(g)
+                if not graph[g]:
+                    gates.discard(g)
+
+        min_gate, path = nearest_gate(graph, gates, virus)
         if not min_gate or len(path) < 2:
+            for node in sorted(graph.keys()):
+                for g in sorted(graph[node]):
+                    if g.isupper():
+                        result.append(f"{g}-{node}")
             break
 
         near = path[-2]
