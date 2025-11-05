@@ -37,6 +37,7 @@ def bfs_path(graph, start, target):
     path.reverse()
     return path
 
+
 def nearest_gate(graph, gates, start):
     dist = {start: 0}
     q = deque([start])
@@ -103,6 +104,10 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
                         q.append(v)
 
             for node in sorted(reachable):
+                for g in sorted(graph[node]):
+                    if g.isupper() and f"{g}-{node}" not in result:
+                        result.append(f"{g}-{node}")
+            for node in sorted(graph.keys()):
                 for g in sorted(graph[node]):
                     if g.isupper() and f"{g}-{node}" not in result:
                         result.append(f"{g}-{node}")
