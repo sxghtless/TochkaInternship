@@ -93,9 +93,18 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
 
         min_gate, path = nearest_gate(graph, gates, virus)
         if not min_gate or len(path) < 2:
-            for node in sorted(graph.keys()):
+            reachable = set([virus])
+            q = deque([virus])
+            while q:
+                u = q.popleft()
+                for v in graph[u]:
+                    if v not in reachable:
+                        reachable.add(v)
+                        q.append(v)
+
+            for node in sorted(reachable):
                 for g in sorted(graph[node]):
-                    if g.isupper():
+                    if g.isupper() and f"{g}-{node}" not in result:
                         result.append(f"{g}-{node}")
             break
 
@@ -106,10 +115,7 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
         if not graph[min_gate]:
             gates.discard(min_gate)
 
-        if len(path) > 2:
-            virus = path[1]
-        else:
-            break
+        virus = path[1] if len(path) > 2 else virus
 
     result = sorted(result)
     return result
