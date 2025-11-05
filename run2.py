@@ -101,6 +101,7 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
         else:
             break
 
+    result = sorted(result)
     return result
 
 
