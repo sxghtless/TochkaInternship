@@ -115,7 +115,10 @@ def solve(edges: list[tuple[str, str]]) -> list[str]:
         if not graph[min_gate]:
             gates.discard(min_gate)
 
-        virus = path[1] if len(path) > 2 else virus
+        if len(path) > 2:
+            virus = path[1]
+        else:
+            break
 
     result = sorted(result)
     return result
